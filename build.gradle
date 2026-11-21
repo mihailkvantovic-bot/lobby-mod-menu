@@ -1,0 +1,62 @@
+plugins {
+    id 'eclipse'
+    id 'idea'
+    id 'maven-publish'
+    id 'net.minecraftforge.gradle' version '[6.0,6.2)'
+}
+
+version = '1.0.0'
+group = 'com.example.lobbymenu'
+base { archivesName = 'lobbymenu' }
+
+java.toolchain.languageVersion = JavaLanguageVersion.of(17)
+
+minecraft {
+    mappings channel: 'official', version: '1.20.1'
+    copyIdeResources = true
+
+    runs {
+        client {
+            workingDirectory project.file('run')
+            property 'forge.logging.markers', 'REGISTRIES'
+            property 'forge.logging.console.level', 'debug'
+            mods { lobbymenu { source sourceSets.main } }
+        }
+        server {
+            workingDirectory project.file('run')
+            mods { lobbymenu { source sourceSets.main } }
+        }
+    }
+}
+
+repositories {
+    mavenCentral()
+}
+
+dependencies {
+    minecraft 'net.minecraftforge:forge:1.20.1-47.3.0'
+}
+
+tasks.named('processResources', ProcessResources).configure {
+    var replaceProperties = [
+            minecraft_version: '1.20.1',
+            forge_version    : '47.3.0',
+            mod_id           : 'lobbymenu',
+            mod_version      : project.version
+    ]
+    inputs.properties replaceProperties
+    filesMatching(['META-INF/mods.toml', 'pack.mcmeta']) {
+        expand replaceProperties
+    }
+}
+
+jar {
+    manifest {
+        attributes([
+                "Specification-Title"     : "lobbymenu",
+                "Specification-Version"   : "1",
+                "Implementation-Title"    : "Lobby Menu",
+                "Implementation-Version"  : project.version
+        ])
+    }
+}

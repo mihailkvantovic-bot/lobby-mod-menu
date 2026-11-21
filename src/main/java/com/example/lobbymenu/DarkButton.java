@@ -1,12 +1,10 @@
 package com.example.lobbymenu;
 
+import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.components.Button;
 import net.minecraft.network.chat.Component;
 
-/**
- * Кнопка серо-чёрного цвета.
- */
 public class DarkButton extends Button {
 
     public DarkButton(int x, int y, int width, int height, Component message, OnPress onPress) {
@@ -17,8 +15,8 @@ public class DarkButton extends Button {
     protected void renderWidget(GuiGraphics guiGraphics, int mouseX, int mouseY, float partialTick) {
         boolean highlighted = this.isHoveredOrFocused();
 
-        int bg     = highlighted ? 0xE0333333 : 0xCC111111; // серый / почти чёрный
-        int border = highlighted ? 0xFF777777 : 0xFF444444; // рамка
+        int bg     = highlighted ? 0xE0333333 : 0xCC111111;
+        int border = highlighted ? 0xFF777777 : 0xFF444444;
 
         guiGraphics.fill(this.getX(), this.getY(),
                 this.getX() + this.width, this.getY() + this.height, bg);
@@ -26,7 +24,7 @@ public class DarkButton extends Button {
                 this.width, this.height, border);
 
         guiGraphics.drawCenteredString(
-                this.getMinecraft().font,
+                Minecraft.getInstance().font,
                 this.getMessage(),
                 this.getX() + this.width / 2,
                 this.getY() + (this.height - 8) / 2,

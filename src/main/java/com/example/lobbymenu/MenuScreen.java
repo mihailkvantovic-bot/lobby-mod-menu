@@ -15,7 +15,6 @@ public class MenuScreen extends Screen {
         int btnW = 160;
         int btnH = 22;
 
-        // Кнопка "Начать игру" — в правом нижнем углу
         this.addRenderableWidget(new DarkButton(
                 this.width - btnW - 15,
                 this.height - btnH - 15,
@@ -28,7 +27,6 @@ public class MenuScreen extends Screen {
                 }
         ));
 
-        // Кнопка "Назад" — по центру
         this.addRenderableWidget(new DarkButton(
                 this.width / 2 - btnW / 2,
                 this.height / 2 - btnH / 2,
@@ -38,13 +36,11 @@ public class MenuScreen extends Screen {
         ));
     }
 
-    // Полупрозрачный фон на весь экран (перекрываем стандартный фон/блюр)
     @Override
-    public void renderBackground(GuiGraphics guiGraphics, int mouseX, int mouseY, float partialTick) {
+    public void renderBackground(GuiGraphics guiGraphics) {
         guiGraphics.fill(0, 0, this.width, this.height, 0x99000000);
     }
 
-    // Не ставим игру на паузу
     @Override
     public boolean isPauseScreen() {
         return false;

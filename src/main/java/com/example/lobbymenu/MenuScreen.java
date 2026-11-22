@@ -68,9 +68,9 @@ public class MenuScreen extends Screen {
         ));
     }
 
-    // Анимируем затемнение фона
+    // Анимируем затемнение фона (В Forge 1.20.1 тут только один аргумент!)
     @Override
-    public void renderBackground(GuiGraphics guiGraphics, int mouseX, int mouseY, float partialTick) {
+    public void renderBackground(GuiGraphics guiGraphics) {
         long elapsed = System.currentTimeMillis() - this.openedAt;
         float progress = Math.min(1.0f, elapsed / 300.0f); // Анимация длится 300мс
         

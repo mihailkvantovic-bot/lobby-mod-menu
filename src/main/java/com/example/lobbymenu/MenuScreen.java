@@ -29,6 +29,7 @@ public class MenuScreen extends Screen {
                 button -> this.onClose()
         ));
 
+        // Кнопка "Начать игру" - теперь закрывает меню
         this.addRenderableWidget(new DarkButton(
                 this.width - btnW - margin,
                 this.height - btnH - margin,
@@ -38,6 +39,7 @@ public class MenuScreen extends Screen {
                     if (this.minecraft != null && this.minecraft.player != null) {
                         this.minecraft.player.connection.sendCommand("function lobby:start");
                     }
+                    this.onClose(); // Закрываем меню после отправки команды
                 }
         ));
 
@@ -68,13 +70,12 @@ public class MenuScreen extends Screen {
         ));
     }
 
-    // Анимируем затемнение фона (В Forge 1.20.1 тут только один аргумент!)
+    // Анимируем затемнение фона
     @Override
     public void renderBackground(GuiGraphics guiGraphics) {
         long elapsed = System.currentTimeMillis() - this.openedAt;
-        float progress = Math.min(1.0f, elapsed / 300.0f); // Анимация длится 300мс
+        float progress = Math.min(1.0f, elapsed / 300.0f); 
         
-        // Ease-out cubic (плавное замедление к концу)
         float eased = 1.0f - (float)Math.pow(1.0f - progress, 3.0f);
         int bgAlpha = (int)(0xCC * eased) << 24;
 
@@ -87,48 +88,47 @@ public class MenuScreen extends Screen {
         float progress = Math.min(1.0f, elapsed / 300.0f);
         float eased = 1.0f - (float)Math.pow(1.0f - progress, 3.0f);
 
-        // Передаем прогресс анимации во все кнопки перед их отрисовкой
         for (var widget : this.renderables) {
             if (widget instanceof DarkButton btn) {
                 btn.setAnimProgress(eased);
             }
         }
 
-        // Стандартный рендер экрана (вызывает renderBackground и рисует кнопки)
         super.render(guiGraphics, mouseX, mouseY, partialTick);
 
-        // Рисуем никнейм, текст и модель
         if (this.minecraft != null && this.minecraft.player != null) {
             int textAlpha = (int)(255 * eased) << 24;
 
-            // Никнейм (проявляется)
-            String name = this.minecraft.player.getDisplayName().getString();
-            guiGraphics.drawCenteredString(this.font, name, this.width / 2, this.height / 2 - 90, textAlpha | 0xFFFFFF);
+            // Координаты для левого верхнего угла (под кнопкой Назад)
+            int playerX = 70;   // Середина по X
+            int nameY = 50;     // Высота ника
+            int roleY = 65;     // Высота роли
+            int modelY = 130;   // Низ 3D-модели
 
-            // Роль (проявляется)
+            // Никнейм
+            String name = this.minecraft.player.getDisplayName().getString();
+            guiGraphics.drawCenteredString(this.font, name, playerX, nameY, textAlpha | 0xFFFFFF);
+
+            // Роль
             String role = this.selectedTeam == 0 ? "Роль: Игрок" : "Роль: Охотник";
             int roleColor = this.selectedTeam == 0 ? 0x55FF55 : 0xFF5555;
-            guiGraphics.drawCenteredString(this.font, role, this.width / 2, this.height / 2 - 75, textAlpha | roleColor);
+            guiGraphics.drawCenteredString(this.font, role, playerX, roleY, textAlpha | roleColor);
 
             // 3D Модель
-            int scale = 40;
-            int modelX = this.width / 2;
-            int modelY = this.height / 2 + 60;
-            float rotationX = (float)(modelX) - mouseX;
+            int scale = 30; // Чуть уменьшили, чтобы модель аккуратно смотрелась в углу
+            float rotationX = (float)(playerX) - mouseX;
             float rotationY = (float)(modelY - 50) - mouseY;
 
-            // Анимация масштабирования модели (вырастает из 0 до 1)
-            // Защита от нулевого масштаба, чтобы игра не крашнулась на первом кадре
             float modelScale = Math.max(0.01f, eased); 
 
             guiGraphics.pose().pushPose();
-            guiGraphics.pose().translate(modelX, modelY, 0);
+            guiGraphics.pose().translate(playerX, modelY, 0);
             guiGraphics.pose().scale(modelScale, modelScale, modelScale);
-            guiGraphics.pose().translate(-modelX, -modelY, 0);
+            guiGraphics.pose().translate(-playerX, -modelY, 0);
 
             InventoryScreen.renderEntityInInventoryFollowsMouse(
                     guiGraphics,
-                    modelX, modelY,
+                    playerX, modelY,
                     scale,
                     rotationX, rotationY,
                     this.minecraft.player

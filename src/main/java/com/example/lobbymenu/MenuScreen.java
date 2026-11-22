@@ -7,8 +7,8 @@ import net.minecraft.network.chat.Component;
 
 public class MenuScreen extends Screen {
 
-    // 0 = Игрок (Runner), 1 = Охотник (Hunter)
     private int selectedTeam = 0; 
+    private long openedAt; // Время открытия для анимации
 
     public MenuScreen() {
         super(Component.literal("Меню"));
@@ -16,11 +16,12 @@ public class MenuScreen extends Screen {
 
     @Override
     protected void init() {
-        int btnW = 110; // Сделали кнопки короче
+        this.openedAt = System.currentTimeMillis(); // Запоминаем время старта
+
+        int btnW = 110;
         int btnH = 20;
         int margin = 15;
 
-        // 1. Кнопка "Назад" — в ЛЕВОМ ВЕРХНЕМ углу
         this.addRenderableWidget(new DarkButton(
                 margin, margin,
                 btnW, btnH,
@@ -28,7 +29,6 @@ public class MenuScreen extends Screen {
                 button -> this.onClose()
         ));
 
-        // 2. Кнопка "Начать игру" — в правом нижнем углу
         this.addRenderableWidget(new DarkButton(
                 this.width - btnW - margin,
                 this.height - btnH - margin,
@@ -41,7 +41,6 @@ public class MenuScreen extends Screen {
                 }
         ));
 
-        // 3. Кнопка "Игрок" — в левом нижнем углу
         this.addRenderableWidget(new DarkButton(
                 margin,
                 this.height - btnH - margin,
@@ -55,10 +54,9 @@ public class MenuScreen extends Screen {
                 }
         ));
 
-        // 4. Кнопка "Охотник" — НАД кнопкой "Игрок"
         this.addRenderableWidget(new DarkButton(
                 margin,
-                this.height - (btnH * 2) - margin - 5, // 5 пикселей отступа между кнопками
+                this.height - (btnH * 2) - margin - 5,
                 btnW, btnH,
                 Component.literal("Охотник"),
                 button -> {
@@ -70,36 +68,63 @@ public class MenuScreen extends Screen {
         ));
     }
 
-    // Затемняем экран сильнее
+    // Анимируем затемнение фона
     @Override
-    public void renderBackground(GuiGraphics guiGraphics) {
-        guiGraphics.fill(0, 0, this.width, this.height, 0xCC000000);
+    public void renderBackground(GuiGraphics guiGraphics, int mouseX, int mouseY, float partialTick) {
+        long elapsed = System.currentTimeMillis() - this.openedAt;
+        float progress = Math.min(1.0f, elapsed / 300.0f); // Анимация длится 300мс
+        
+        // Ease-out cubic (плавное замедление к концу)
+        float eased = 1.0f - (float)Math.pow(1.0f - progress, 3.0f);
+        int bgAlpha = (int)(0xCC * eased) << 24;
+
+        guiGraphics.fill(0, 0, this.width, this.height, bgAlpha);
     }
 
-    // Отрисовка 3D-модели и текста
     @Override
     public void render(GuiGraphics guiGraphics, int mouseX, int mouseY, float partialTick) {
-        this.renderBackground(guiGraphics);
+        long elapsed = System.currentTimeMillis() - this.openedAt;
+        float progress = Math.min(1.0f, elapsed / 300.0f);
+        float eased = 1.0f - (float)Math.pow(1.0f - progress, 3.0f);
+
+        // Передаем прогресс анимации во все кнопки перед их отрисовкой
+        for (var widget : this.renderables) {
+            if (widget instanceof DarkButton btn) {
+                btn.setAnimProgress(eased);
+            }
+        }
+
+        // Стандартный рендер экрана (вызывает renderBackground и рисует кнопки)
         super.render(guiGraphics, mouseX, mouseY, partialTick);
 
+        // Рисуем никнейм, текст и модель
         if (this.minecraft != null && this.minecraft.player != null) {
-            // 1. Рисуем никнейм по центру сверху
+            int textAlpha = (int)(255 * eased) << 24;
+
+            // Никнейм (проявляется)
             String name = this.minecraft.player.getDisplayName().getString();
-            guiGraphics.drawCenteredString(this.font, name, this.width / 2, this.height / 2 - 90, 0xFFFFFF);
+            guiGraphics.drawCenteredString(this.font, name, this.width / 2, this.height / 2 - 90, textAlpha | 0xFFFFFF);
 
-            // 2. Рисуем текст выбранной роли
+            // Роль (проявляется)
             String role = this.selectedTeam == 0 ? "Роль: Игрок" : "Роль: Охотник";
-            int color = this.selectedTeam == 0 ? 0x55FF55 : 0xFF5555; // Зеленый для игрока, красный для охотника
-            guiGraphics.drawCenteredString(this.font, role, this.width / 2, this.height / 2 - 75, color);
+            int roleColor = this.selectedTeam == 0 ? 0x55FF55 : 0xFF5555;
+            guiGraphics.drawCenteredString(this.font, role, this.width / 2, this.height / 2 - 75, textAlpha | roleColor);
 
-            // 3. Рисуем 3D-модель игрока
-            int scale = 40; // Размер модели
+            // 3D Модель
+            int scale = 40;
             int modelX = this.width / 2;
-            int modelY = this.height / 2 + 60; // Сдвиг вниз от центра
-
-            // Формула поворота модели за мышкой (как в инвентаре)
+            int modelY = this.height / 2 + 60;
             float rotationX = (float)(modelX) - mouseX;
             float rotationY = (float)(modelY - 50) - mouseY;
+
+            // Анимация масштабирования модели (вырастает из 0 до 1)
+            // Защита от нулевого масштаба, чтобы игра не крашнулась на первом кадре
+            float modelScale = Math.max(0.01f, eased); 
+
+            guiGraphics.pose().pushPose();
+            guiGraphics.pose().translate(modelX, modelY, 0);
+            guiGraphics.pose().scale(modelScale, modelScale, modelScale);
+            guiGraphics.pose().translate(-modelX, -modelY, 0);
 
             InventoryScreen.renderEntityInInventoryFollowsMouse(
                     guiGraphics,
@@ -108,6 +133,8 @@ public class MenuScreen extends Screen {
                     rotationX, rotationY,
                     this.minecraft.player
             );
+
+            guiGraphics.pose().popPose();
         }
     }
 
